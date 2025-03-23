@@ -1,0 +1,174 @@
+# backend/docker-compose.yml
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: taxi-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - JWT_SECRET=your-jwt-secret
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - BOOKING_SERVICE_URL=http://booking-service:3002
+      - TRACKING_SERVICE_URL=http://tracking-service:3003
+      - PAYMENT_SERVICE_URL=http://payment-service:3004
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3005
+    depends_on:
+      - auth-service
+      - booking-service
+      - tracking-service
+      - payment-service
+      - notification-service
+    networks:
+      - taxi-network
+    restart: unless-stopped
+
+  # Authentication Service
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: taxi-auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - JWT_SECRET=your-jwt-secret
+      - JWT_REFRESH_SECRET=your-refresh-secret
+      - MONGODB_URI=mongodb://mongodb:27017/taxi-auth
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - taxi-network
+    restart: unless-stopped
+
+  # Booking Service
+  booking-service:
+    build:
+      context: ./booking-service
+      dockerfile: Dockerfile
+    container_name: taxi-booking-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - JWT_SECRET=your-jwt-secret
+      - MONGODB_URI=mongodb://mongodb:27017/taxi-bookings
+      - TRACKING_SERVICE_URL=http://tracking-service:3003
+      - PAYMENT_SERVICE_URL=http://payment-service:3004
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3005
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - taxi-network
+    restart: unless-stopped
+
+  # Tracking Service
+  tracking-service:
+    build:
+      context: ./tracking-service
+      dockerfile: Dockerfile
+    container_name: taxi-tracking-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - JWT_SECRET=your-jwt-secret
+      - MONGODB_URI=mongodb://mongodb:27017/taxi-tracking
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3005
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - taxi-network
+    restart: unless-stopped
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: taxi-payment-service
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - JWT_SECRET=your-jwt-secret
+      - MONGODB_URI=mongodb://mongodb:27017/taxi-payments
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3005
+      - BOOKING_SERVICE_URL=http://booking-service:3002
+      - STRIPE_API_KEY=your-stripe-api-key
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - taxi-network
+    restart: unless-stopped
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: taxi-notification-service
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+      - PORT=3005
+      - JWT_SECRET=your-jwt-secret
+      - MONGODB_URI=mongodb://mongodb:27017/taxi-notifications
+      - EMAIL_SERVICE_API_KEY=your-email-service-api-key
+      - SMS_SERVICE_API_KEY=your-sms-service-api-key
+      - PUSH_NOTIFICATION_API_KEY=your-push-notification-api-key
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - taxi-network
+    restart: unless-stopped
+
+  # MongoDB
+  mongodb:
+    image: mongo:latest
+    container_name: taxi-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - taxi-network
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:latest
+    container_name: taxi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - taxi-network
+    restart: unless-stopped
+
+networks:
+  taxi-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  redis_data:
