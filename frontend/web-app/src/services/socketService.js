@@ -1,5 +1,8 @@
 // frontend/web-app/src/services/socketService.js
 import io from 'socket.io-client';
+import { store } from '../redux/store';
+import { addMessage } from '../redux/slices/chatSlice';
+import { addNotification } from '../redux/slices/notificationSlice';
 
 let socket = null;
 
@@ -30,6 +33,30 @@ const initializeSocket = (token) => {
     console.error('Socket connection error:', error);
   });
   
+  // Chat events
+  socket.on('new_message', (messageData) => {
+    // Dispatch to Redux
+    store.dispatch(addMessage(messageData));
+    
+    // Create notification for new messages if not in active chat
+    const state = store.getState();
+    if (state.chat.activeChat !== messageData.bookingId) {
+      const notificationData = {
+        title: 'New Message',
+        message: `You have a new message from ${messageData.senderName}`,
+        type: 'message',
+        data: {
+          bookingId: messageData.bookingId
+        },
+        createdAt: new Date().toISOString(),
+        isRead: false
+      };
+      store.dispatch(addNotification(notificationData));
+    }
+  });
+  
+  // Other existing event listeners
+
   return socket;
 };
 

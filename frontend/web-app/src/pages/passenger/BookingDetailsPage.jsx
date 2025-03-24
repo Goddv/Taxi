@@ -24,6 +24,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import RatingStars from '../../components/common/RatingStars';
 import BookingStatusBadge from '../../components/booking/BookingStatusBadge';
 import socketService from '../../services/socketService';
+import ChatContainer from '../../components/chat/ChatContainer';
 
 // Set your Mapbox token
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN || 'pk.eyJ1IjoiYWthZ29kZHYiLCJhIjoiY204a3lycWozMTI1bTJsc2EwdHZkcXUwcCJ9.DqeQFGE_NaN-68_3rIWFlw';
@@ -551,6 +552,18 @@ const BookingDetailsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Chat Container */}
+      {currentBooking && currentBooking.driverId && (
+        <div className="fixed bottom-5 right-5">
+          <ChatContainer 
+            bookingId={currentBooking._id}
+            recipientId={currentBooking.driverId}
+            recipientName={currentBooking.driverName || 'Driver'}
+            bookingStatus={currentBooking.status}
+          />
+        </div>
+      )}
       
       {/* Rating Modal */}
       {showRatingModal && (
